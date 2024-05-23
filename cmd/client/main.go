@@ -32,6 +32,8 @@ func main() {
 
 	gameState := gamelogic.NewGameState(username)
 
+	pubsub.SubscribeJSON(connection, routing.ExchangePerilDirect, routing.PauseKey+"."+username, routing.PauseKey, pubsub.Transient, handlerPause(gameState))
+
 	for {
 		userInput := gamelogic.GetInput()
 		if len(userInput) == 0 {
@@ -82,4 +84,11 @@ func main() {
 	<-done // Will block here until user hits ctrl+c
 
 	fmt.Println("Shutting down")
+}
+
+func handlerPause(gs *gamelogic.GameState) func(routing.PlayingState) {
+	return func(ps routing.PlayingState) {
+		defer fmt.Print("> ")
+		gs.HandlePause(ps)
+	}
 }
