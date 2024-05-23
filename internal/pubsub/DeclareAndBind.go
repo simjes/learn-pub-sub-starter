@@ -6,6 +6,11 @@ import (
 	amqp "github.com/rabbitmq/amqp091-go"
 )
 
+const (
+	Durable   = 0
+	Transient = 1
+)
+
 func DeclareAndBind(
 	conn *amqp.Connection,
 	exchange,
@@ -17,7 +22,7 @@ func DeclareAndBind(
 	if err != nil {
 		log.Fatalf("Could not create channel: %v", err)
 	}
-	isTransient := simpleQueueType == 1
+	isTransient := simpleQueueType == Transient
 	queue, err := channel.QueueDeclare(queueName, !isTransient, isTransient, isTransient, false, nil)
 	if err != nil {
 		log.Fatalf("Could not declare queue: %v", err)

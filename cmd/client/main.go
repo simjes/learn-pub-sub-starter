@@ -28,7 +28,54 @@ func main() {
 		log.Fatalf("Need a username: %v", err)
 	}
 
-	pubsub.DeclareAndBind(connection, routing.ExchangePerilDirect, routing.PauseKey+"."+username, routing.PauseKey, 1)
+	pubsub.DeclareAndBind(connection, routing.ExchangePerilDirect, routing.PauseKey+"."+username, routing.PauseKey, pubsub.Transient)
+
+	gameState := gamelogic.NewGameState(username)
+
+	for {
+		userInput := gamelogic.GetInput()
+		if len(userInput) == 0 {
+			continue
+		}
+
+		if userInput[0] == "spawn" {
+			err := gameState.CommandSpawn(userInput)
+			if err != nil {
+				fmt.Println(err)
+			}
+			continue
+		}
+
+		if userInput[0] == "move" {
+			_, err := gameState.CommandMove(userInput)
+			if err != nil {
+				fmt.Println(err)
+			}
+			continue
+		}
+
+		if userInput[0] == "status" {
+			gameState.CommandStatus()
+			continue
+		}
+
+		if userInput[0] == "help" {
+			gamelogic.PrintClientHelp()
+			continue
+		}
+
+		if userInput[0] == "spam" {
+			fmt.Println("Spamming not allowed yet")
+			continue
+		}
+
+		if userInput[0] == "quit" {
+			gamelogic.PrintQuit()
+			break
+		}
+
+		fmt.Println("I don't understand that command")
+	}
 
 	done := make(chan os.Signal, 1)
 	signal.Notify(done, syscall.SIGINT, syscall.SIGTERM)
