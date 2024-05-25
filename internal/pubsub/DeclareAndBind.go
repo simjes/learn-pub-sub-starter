@@ -9,8 +9,8 @@ import (
 type SimpleQueueType int
 
 const (
-	Durable   SimpleQueueType = 0
-	Transient SimpleQueueType = 1
+	Durable SimpleQueueType = iota
+	Transient
 )
 
 // type ExchangeKind string
@@ -35,7 +35,9 @@ func DeclareAndBind(
 		log.Fatalf("Could not create channel: %v", err)
 	}
 	isTransient := simpleQueueType == Transient
-	queue, err := channel.QueueDeclare(queueName, !isTransient, isTransient, isTransient, false, nil)
+	queue, err := channel.QueueDeclare(queueName, !isTransient, isTransient, isTransient, false, amqp.Table{
+		"x-dead-letter-exchange": "peril_dlx",
+	})
 	if err != nil {
 		log.Fatalf("Could not declare queue: %v", err)
 	}
