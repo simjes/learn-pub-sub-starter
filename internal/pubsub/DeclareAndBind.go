@@ -10,15 +10,25 @@ type SimpleQueueType int
 
 const (
 	Durable   SimpleQueueType = 0
-	Transient                 = 1
+	Transient SimpleQueueType = 1
 )
+
+// type ExchangeKind string
+
+// const (
+// 	Direct  ExchangeKind = "direct"
+// 	Topic   ExchangeKind = "topic"
+// 	Headers ExchangeKind = "headers"
+// 	Fanout  ExchangeKind = "fanout"
+// )
 
 func DeclareAndBind(
 	conn *amqp.Connection,
 	exchange,
 	queueName,
 	key string,
-	simpleQueueType SimpleQueueType, // an enum to represent "durable" or "transient"
+	simpleQueueType SimpleQueueType,
+	// kind ExchangeKind,
 ) (*amqp.Channel, amqp.Queue, error) {
 	channel, err := conn.Channel()
 	if err != nil {
@@ -30,8 +40,14 @@ func DeclareAndBind(
 		log.Fatalf("Could not declare queue: %v", err)
 	}
 
-	bindError := channel.QueueBind(queueName, key, exchange, false, nil)
-	if bindError != nil {
+	// Exchange and Queue types (durable, transient) should be independent — revisit ensuring exchanges are declared later
+	// err = channel.ExchangeDeclare(exchange, string(kind), !isTransient, isTransient, false, false, nil)
+	// if err != nil {
+	// 	log.Fatalf("Could not declare exchange: %v", err)
+	// }
+
+	err = channel.QueueBind(queueName, key, exchange, false, nil)
+	if err != nil {
 		log.Fatalf("Could not bind queue: %v", err)
 	}
 

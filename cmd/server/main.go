@@ -29,7 +29,7 @@ func main() {
 		log.Fatalf("could not open channel %v", err)
 	}
 
-	pubsub.DeclareAndBind(connection, routing.ExchangePerilTopic, routing.GameLogSlug, routing.GameLogSlug+".*", pubsub.Durable)
+	pubsub.DeclareAndBind(connection, routing.ExchangePerilTopic, routing.GameLogSlug, routing.GameLogSlug+".*", pubsub.Durable) // pubsub.Topic)
 	// if err != nil {
 	// 	log.Fatalf("Could not create queue %v", err)
 	// }

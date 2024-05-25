@@ -12,9 +12,10 @@ func SubscribeJSON[T any](
 	queueName,
 	key string,
 	simpleQueueType SimpleQueueType,
+	// kind ExchangeKind,
 	handler func(T),
 ) error {
-	channel, queue, err := DeclareAndBind(conn, exchange, queueName, key, simpleQueueType)
+	channel, queue, err := DeclareAndBind(conn, exchange, queueName, key, simpleQueueType) //kind
 	if err != nil {
 		return err
 	}
