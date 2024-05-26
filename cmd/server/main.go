@@ -29,10 +29,7 @@ func main() {
 		log.Fatalf("could not open channel %v", err)
 	}
 
-	pubsub.DeclareAndBind(connection, routing.ExchangePerilTopic, routing.GameLogSlug, routing.GameLogSlug+".*", pubsub.Durable) // pubsub.Topic)
-	// if err != nil {
-	// 	log.Fatalf("Could not create queue %v", err)
-	// }
+	pubsub.SubscribeGob(connection, routing.ExchangePerilTopic, routing.GameLogSlug, routing.GameLogSlug+".*", pubsub.Durable, handlerLogs(channel))
 
 	fmt.Println("Connection successful")
 
@@ -74,5 +71,17 @@ func main() {
 	<-done // Will block here until user hits ctrl+c
 
 	fmt.Println("Shutting down")
+}
 
+func handlerLogs(ch *amqp.Channel) func(routing.GameLog) pubsub.AckType {
+	return func(gl routing.GameLog) pubsub.AckType {
+		defer fmt.Print("> ")
+		err := gamelogic.WriteLog(gl)
+
+		if err != nil {
+			return pubsub.NackRequeue
+		}
+
+		return pubsub.Ack
+	}
 }

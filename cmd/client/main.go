@@ -6,6 +6,7 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 
 	"github.com/bootdotdev/learn-pub-sub-starter/internal/gamelogic"
 	"github.com/bootdotdev/learn-pub-sub-starter/internal/pubsub"
@@ -39,7 +40,7 @@ func main() {
 
 	pubsub.SubscribeJSON(connection, routing.ExchangePerilDirect, routing.PauseKey+"."+username, routing.PauseKey, pubsub.Transient, handlerPause(gameState))
 	pubsub.SubscribeJSON(connection, routing.ExchangePerilTopic, routing.ArmyMovesPrefix+"."+username, routing.ArmyMovesPrefix+".*", pubsub.Transient, handlerMove(channel, gameState))
-	pubsub.SubscribeJSON(connection, routing.ExchangePerilTopic, routing.WarRecognitionsPrefix, routing.WarRecognitionsPrefix+".*", pubsub.Durable, handlerWar(gameState))
+	pubsub.SubscribeJSON(connection, routing.ExchangePerilTopic, routing.WarRecognitionsPrefix, routing.WarRecognitionsPrefix+".*", pubsub.Durable, handlerWar(channel, gameState))
 
 	for {
 		userInput := gamelogic.GetInput()
@@ -130,10 +131,30 @@ func handlerMove(ch *amqp.Channel, gs *gamelogic.GameState) func(move gamelogic.
 	}
 }
 
-func handlerWar(gs *gamelogic.GameState) func(gamelogic.RecognitionOfWar) pubsub.AckType {
+func handlerWar(ch *amqp.Channel, gs *gamelogic.GameState) func(gamelogic.RecognitionOfWar) pubsub.AckType {
 	return func(rw gamelogic.RecognitionOfWar) pubsub.AckType {
 		defer fmt.Print("> ")
-		outcome, _, _ := gs.HandleWar(rw)
+		outcome, winner, loser := gs.HandleWar(rw)
+
+		var message string
+
+		if outcome == gamelogic.WarOutcomeOpponentWon || outcome == gamelogic.WarOutcomeYouWon {
+			message = fmt.Sprintf("%s won a war against %s", winner, loser)
+		}
+
+		if outcome == gamelogic.WarOutcomeDraw {
+			message = fmt.Sprintf("A war between %s and %s resulted in a draw", winner, loser)
+		}
+
+		err := pubsub.PublishGob(ch, routing.ExchangePerilTopic, routing.GameLogSlug+"."+rw.Attacker.Username, routing.GameLog{
+			CurrentTime: time.Now(),
+			Username:    rw.Attacker.Username,
+			Message:     message,
+		})
+
+		if err != nil {
+			return pubsub.NackRequeue
+		}
 
 		if outcome == gamelogic.WarOutcomeNotInvolved {
 			return pubsub.NackRequeue
