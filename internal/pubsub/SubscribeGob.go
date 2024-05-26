@@ -21,6 +21,7 @@ func SubscribeGob[T any](
 		return err
 	}
 
+	channel.Qos(10, 0, false)
 	deliveryChannel, err := channel.Consume(queue.Name, "", false, false, false, false, nil)
 	if err != nil {
 		return err

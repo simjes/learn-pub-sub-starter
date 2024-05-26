@@ -5,6 +5,7 @@ import (
 	"log"
 	"os"
 	"os/signal"
+	"strconv"
 	"syscall"
 	"time"
 
@@ -78,7 +79,21 @@ func main() {
 		}
 
 		if userInput[0] == "spam" {
-			fmt.Println("Spamming not allowed yet")
+			times, err := strconv.Atoi(userInput[1])
+			if err != nil || times <= 0 {
+				fmt.Println("Input was not a valid number")
+				continue
+			}
+
+			for range times {
+				logMsg := gamelogic.GetMaliciousLog()
+				pubsub.PublishGob(channel, routing.ExchangePerilTopic, routing.GameLogSlug+"."+username, routing.GameLog{
+					CurrentTime: time.Now(),
+					Username:    username,
+					Message:     logMsg,
+				})
+			}
+
 			continue
 		}
 
